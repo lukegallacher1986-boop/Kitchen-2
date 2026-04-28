@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>Boat House Stock Order</title>
+<style>
+*{box-sizing:border-box} html,body{margin:0;padding:0;width:100%;min-height:100%}
+body{font-family:Arial,Helvetica,sans-serif;background:#f8fafc;color:#0f172a}
+.app{width:100%;min-height:100vh;background:#f8fafc;padding-bottom:90px}
+header{background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:22px 16px 18px;border-bottom-left-radius:26px;border-bottom-right-radius:26px;box-shadow:0 8px 24px rgba(0,0,0,.22);position:sticky;top:0;z-index:10}
+h1{margin:0;font-size:30px;letter-spacing:-.6px}.sub{margin:5px 0 0;color:#cbd5e1;font-size:14px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.stat{background:rgba(255,255,255,.12);border-radius:18px;padding:12px;text-align:center}.stat strong{display:block;font-size:28px}.stat span{font-size:12px;color:#cbd5e1}.gold{background:#fbbf24;color:#111827}.gold span{color:#111827}
+main{padding:14px;max-width:760px;margin:0 auto}.card{background:white;border-radius:22px;padding:14px;margin-bottom:14px;box-shadow:0 6px 18px rgba(15,23,42,.08);border:1px solid #e2e8f0}
+.search,.small-input{width:100%;border:1px solid #cbd5e1;background:#fff;border-radius:15px;padding:13px;font-size:16px;outline:none}.search{background:#f8fafc;margin-bottom:10px}
+.categories{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}.cat{border:none;background:#e2e8f0;color:#334155;padding:10px 14px;border-radius:999px;white-space:nowrap;font-weight:700}.cat.active{background:#0f172a;color:white}
+.item{border:1px solid #e2e8f0;border-radius:18px;padding:13px;margin-bottom:10px;background:white}.item.selected{border-color:#fbbf24;background:#fffbeb}.item-top{display:grid;grid-template-columns:38px 1fr 86px;gap:10px;align-items:center}.tick{width:30px;height:30px;accent-color:#fbbf24}.item-actions{display:flex;gap:6px;justify-content:flex-end}.delete-item,.edit-item{border:none;border-radius:12px;font-size:18px;font-weight:900;width:38px;height:38px;line-height:1}.delete-item{background:#fee2e2;color:#991b1b}.edit-item{background:#dbeafe;color:#1e40af}.item-name{font-weight:800;font-size:17px}.item-meta{color:#64748b;font-size:12px;margin-top:3px}.qty-row{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-top:10px}
+h2{margin:0 0 12px;font-size:21px}.add-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.full{grid-column:1/-1}.btn{border:none;border-radius:16px;padding:14px;font-size:15px;font-weight:800;cursor:pointer}.btn-dark{background:#0f172a;color:white}.btn-gold{background:#fbbf24;color:#111827}.btn-red{background:#fee2e2;color:#991b1b}
+#exportBox{display:none;width:100%;height:260px;margin-top:10px;border:2px solid #fbbf24;border-radius:18px;padding:12px;font-size:14px;background:#fffbeb;line-height:1.4;font-family:Arial,Helvetica,sans-serif}textarea{width:100%;height:220px;border:1px solid #cbd5e1;border-radius:18px;padding:12px;font-size:15px;resize:vertical;background:#f8fafc;line-height:1.45;font-family:Arial,Helvetica,sans-serif}#printOutput{display:none;white-space:pre-wrap;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.45}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.bottom-bar{position:fixed;bottom:0;left:0;width:100%;background:rgba(15,23,42,.96);padding:10px 14px max(10px,env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:8px;box-shadow:0 -8px 24px rgba(0,0,0,.25);z-index:20}.empty,.hint{color:#64748b;font-size:13px;line-height:1.35}
+@media print{header,.card:not(.print-card),.bottom-bar,.actions,#emptyText,textarea{display:none!important}main{max-width:none;padding:0}.print-card{box-shadow:none;border:none}#printOutput{display:block!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>Stock Order</h1><p class="sub">The Boat House • menu-based Booker list</p><div class="stats"><div class="stat"><strong id="totalCount">0</strong><span>Stock items</span></div><div class="stat gold"><strong id="neededCount">0</strong><span>Needed</span></div></div></header>
+<main>
+<section class="card"><input id="search" class="search" placeholder="Search stock..."><div id="categories" class="categories"></div></section>
+<section class="card"><div id="stockList"></div></section>
+<section class="card"><h2>Add stock item</h2><div class="add-grid"><input id="newName" class="small-input full" placeholder="Item name"><input id="newCat" class="small-input" placeholder="Category"><input id="newUnit" class="small-input" placeholder="Unit e.g. case"><button class="btn btn-dark full" onclick="addItem()">Add item</button></div><p class="hint">Items you add will save on this phone/tablet.</p></section>
+<section class="card print-card"><h2>Order List</h2><p id="emptyText" class="empty">Tick what you need and the order list appears here.</p><textarea id="orderOutput" readonly></textarea><pre id="printOutput"></pre><div class="actions"><button class="btn btn-gold" onclick="copyOrder()">Copy Order</button><button class="btn btn-dark" onclick="printOrder()">Print</button></div><button class="btn btn-dark" style="width:100%;margin-top:8px;" onclick="exportFullStock()">Export Full Stock List</button><textarea id="exportBox" readonly placeholder="Your full export will appear here..."></textarea></section>
+</main>
+<div class="bottom-bar"><button class="btn btn-red" onclick="clearOrder()">Clear Order</button><button class="btn btn-gold" onclick="copyOrder()">Copy Order</button></div>
+</div>
+<script>
+const defaultStock = [{"category": "Meat", "name": "Chicken breast", "unit": "case"}, {"category": "Meat", "name": "Chicken kebab chicken", "unit": "case"}, {"category": "Meat", "name": "Gammon steaks", "unit": "case"}, {"category": "Meat", "name": "Hock ham", "unit": "case"}, {"category": "Meat", "name": "Pork belly", "unit": "case"}, {"category": "Meat", "name": "Lamb shanks", "unit": "case"}, {"category": "Meat", "name": "Duck breast", "unit": "case"}, {"category": "Meat", "name": "Beef strips", "unit": "case"}, {"category": "Meat", "name": "Beef burgers", "unit": "case"}, {"category": "Meat", "name": "Vegan burgers", "unit": "case"}, {"category": "Meat", "name": "Lincolnshire scotch eggs", "unit": "case"}, {"category": "Meat", "name": "Farmhouse pâté", "unit": "case"}, {"category": "Meat", "name": "Devon crab cakes", "unit": "case"}, {"category": "Fish", "name": "Haddock fillets", "unit": "case"}, {"category": "Fish", "name": "Cod fillets", "unit": "case"}, {"category": "Fish", "name": "Smoked cod", "unit": "case"}, {"category": "Fish", "name": "Salmon fillets", "unit": "case"}, {"category": "Fish", "name": "Pollock", "unit": "case"}, {"category": "Fish", "name": "Seabass fillets", "unit": "case"}, {"category": "Fish", "name": "Whitebait", "unit": "case"}, {"category": "Fish", "name": "Crawfish tails", "unit": "case"}, {"category": "Fish", "name": "Prawns", "unit": "case"}, {"category": "Fish", "name": "Mussels", "unit": "case"}, {"category": "Fish", "name": "Calamari strips", "unit": "case"}, {"category": "Frozen", "name": "Chips", "unit": "case"}, {"category": "Frozen", "name": "Cheesy chips topping", "unit": "case"}, {"category": "Frozen", "name": "Onion rings", "unit": "case"}, {"category": "Frozen", "name": "Cauliflower wings", "unit": "case"}, {"category": "Frozen", "name": "Vegetable spring rolls", "unit": "case"}, {"category": "Frozen", "name": "Arancini", "unit": "case"}, {"category": "Frozen", "name": "Camembert portions", "unit": "case"}, {"category": "Frozen", "name": "Garlic bread", "unit": "case"}, {"category": "Frozen", "name": "Cheesy garlic bread", "unit": "case"}, {"category": "Vegetables & Salad", "name": "Mushrooms", "unit": "box"}, {"category": "Vegetables & Salad", "name": "Spinach", "unit": "bag"}, {"category": "Vegetables & Salad", "name": "Tenderstem broccoli", "unit": "pack"}, {"category": "Vegetables & Salad", "name": "Peppers", "unit": "box"}, {"category": "Vegetables & Salad", "name": "Onions", "unit": "bag"}, {"category": "Vegetables & Salad", "name": "Red onion", "unit": "bag"}, {"category": "Vegetables & Salad", "name": "Potatoes", "unit": "sack"}, {"category": "Vegetables & Salad", "name": "Baking potatoes", "unit": "case"}, {"category": "Vegetables & Salad", "name": "Sweet potatoes", "unit": "case"}, {"category": "Vegetables & Salad", "name": "Mixed salad leaves", "unit": "bag"}, {"category": "Vegetables & Salad", "name": "Rocket", "unit": "bag"}, {"category": "Vegetables & Salad", "name": "Tomatoes", "unit": "box"}, {"category": "Vegetables & Salad", "name": "Courgettes", "unit": "box"}, {"category": "Vegetables & Salad", "name": "Aubergines", "unit": "box"}, {"category": "Vegetables & Salad", "name": "Garlic", "unit": "tub"}, {"category": "Vegetables & Salad", "name": "Lemons", "unit": "box"}, {"category": "Vegetables & Salad", "name": "Fresh berries", "unit": "punnet"}, {"category": "Vegetables & Salad", "name": "Strawberries", "unit": "punnet"}, {"category": "Vegetables & Salad", "name": "Apples", "unit": "case"}, {"category": "Vegetables & Salad", "name": "Blackberries", "unit": "punnet"}, {"category": "Dairy & Eggs", "name": "Double cream", "unit": "bottle"}, {"category": "Dairy & Eggs", "name": "Milk", "unit": "bottle"}, {"category": "Dairy & Eggs", "name": "Butter", "unit": "block"}, {"category": "Dairy & Eggs", "name": "Cheddar cheese", "unit": "block"}, {"category": "Dairy & Eggs", "name": "Feta", "unit": "tub"}, {"category": "Dairy & Eggs", "name": "Halloumi", "unit": "block"}, {"category": "Dairy & Eggs", "name": "Parmesan", "unit": "tub"}, {"category": "Dairy & Eggs", "name": "Goats cheese", "unit": "tub"}, {"category": "Dairy & Eggs", "name": "Mascarpone", "unit": "tub"}, {"category": "Dairy & Eggs", "name": "Creme fraiche", "unit": "tub"}, {"category": "Dairy & Eggs", "name": "Custard", "unit": "tub"}, {"category": "Dairy & Eggs", "name": "Eggs", "unit": "tray"}, {"category": "Dry Store", "name": "Ciabatta", "unit": "case"}, {"category": "Dry Store", "name": "Tagliatelle pasta", "unit": "case"}, {"category": "Dry Store", "name": "Pasta shells", "unit": "case"}, {"category": "Dry Store", "name": "Rice", "unit": "bag"}, {"category": "Dry Store", "name": "Basmati rice", "unit": "bag"}, {"category": "Dry Store", "name": "Naan bread", "unit": "case"}, {"category": "Dry Store", "name": "Poppadoms", "unit": "box"}, {"category": "Dry Store", "name": "Croutons", "unit": "bag"}, {"category": "Dry Store", "name": "Breadcrumbs", "unit": "bag"}, {"category": "Dry Store", "name": "Flour", "unit": "bag"}, {"category": "Dry Store", "name": "Sugar", "unit": "bag"}, {"category": "Dry Store", "name": "Brownie mix / chocolate brownie", "unit": "case"}, {"category": "Dry Store", "name": "Biscoff biscuits", "unit": "pack"}, {"category": "Dry Store", "name": "Biscoff spread", "unit": "tub"}, {"category": "Dry Store", "name": "Almond frangipane", "unit": "case"}, {"category": "Dry Store", "name": "Flapjack crumble topping", "unit": "case"}, {"category": "Dry Store", "name": "Pistachios", "unit": "bag"}, {"category": "Dry Store", "name": "Walnuts", "unit": "bag"}, {"category": "Dry Store", "name": "Honey", "unit": "bottle"}, {"category": "Dry Store", "name": "Maple syrup", "unit": "bottle"}, {"category": "Sauces & Condiments", "name": "Mayonnaise", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Garlic mayo", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Vegan mayo", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Sweet chilli sauce", "unit": "bottle"}, {"category": "Sauces & Condiments", "name": "Tartare sauce", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Cocktail sauce", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Wholegrain mustard", "unit": "jar"}, {"category": "Sauces & Condiments", "name": "Dijon mustard", "unit": "jar"}, {"category": "Sauces & Condiments", "name": "Hollandaise sauce", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Gravy granules", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Garlic butter", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "White wine sauce", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Mustard and paprika sauce", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Tomato sauce / ragu base", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Pesto", "unit": "tub"}, {"category": "Sauces & Condiments", "name": "Chutney", "unit": "jar"}, {"category": "Sauces & Condiments", "name": "Pickles", "unit": "jar"}, {"category": "Sauces & Condiments", "name": "BBQ sauce", "unit": "bottle"}, {"category": "Sauces & Condiments", "name": "Tzatziki", "unit": "tub"}, {"category": "Desserts", "name": "Kentish gypsy tart", "unit": "case"}, {"category": "Desserts", "name": "Vegan pancakes", "unit": "case"}, {"category": "Desserts", "name": "Salted pistachio semifreddo", "unit": "case"}, {"category": "Desserts", "name": "Biscoff cheesecake", "unit": "case"}, {"category": "Desserts", "name": "Raspberry frangipane", "unit": "case"}, {"category": "Desserts", "name": "Sticky toffee pudding", "unit": "case"}, {"category": "Desserts", "name": "Apple and blackberry crumble", "unit": "case"}, {"category": "Desserts", "name": "Triple chocolate brownie", "unit": "case"}, {"category": "Desserts", "name": "Classic tiramisu", "unit": "case"}, {"category": "Desserts", "name": "Caramel Yorkshire pudding", "unit": "case"}, {"category": "Desserts", "name": "Vanilla ice cream", "unit": "tub"}, {"category": "Desserts", "name": "Strawberries and cream ice cream", "unit": "tub"}, {"category": "Desserts", "name": "Vegan ice cream", "unit": "tub"}, {"category": "Desserts", "name": "Chocolate sauce", "unit": "bottle"}, {"category": "Desserts", "name": "Caramel sauce", "unit": "bottle"}, {"category": "Desserts", "name": "Pistachio sauce", "unit": "bottle"}, {"category": "Drinks", "name": "English breakfast tea", "unit": "box"}, {"category": "Drinks", "name": "Lavazza coffee beans", "unit": "bag"}, {"category": "Drinks", "name": "Decaf coffee", "unit": "bag"}, {"category": "Drinks", "name": "Hot chocolate", "unit": "tub"}, {"category": "Drinks", "name": "Baileys", "unit": "bottle"}, {"category": "Drinks", "name": "Coffee syrups", "unit": "bottle"}, {"category": "Cleaning & Sundries", "name": "Blue roll", "unit": "case"}, {"category": "Cleaning & Sundries", "name": "Washing up liquid", "unit": "bottle"}, {"category": "Cleaning & Sundries", "name": "Cling film", "unit": "roll"}, {"category": "Cleaning & Sundries", "name": "Foil", "unit": "roll"}, {"category": "Cleaning & Sundries", "name": "Bin bags", "unit": "case"}, {"category": "Cleaning & Sundries", "name": "Takeaway boxes", "unit": "case"}, {"category": "Cleaning & Sundries", "name": "Napkins", "unit": "case"}];
+let stock = JSON.parse(localStorage.getItem("bh_menu_stock_items_v2")) || defaultStock;
+let selected = JSON.parse(localStorage.getItem("bh_menu_selected_items_v2")) || {};
+let activeCategory = "All";
+const stockList=document.getElementById("stockList"),categoriesDiv=document.getElementById("categories"),searchInput=document.getElementById("search"),output=document.getElementById("orderOutput"),emptyText=document.getElementById("emptyText");
+function save(){localStorage.setItem("bh_menu_stock_items_v2",JSON.stringify(stock));localStorage.setItem("bh_menu_selected_items_v2",JSON.stringify(selected))}
+function getCategories(){return["All",...new Set(stock.map(i=>i.category).sort())]}
+function renderCategories(){categoriesDiv.innerHTML="";getCategories().forEach(cat=>{const b=document.createElement("button");b.className="cat"+(cat===activeCategory?" active":"");b.textContent=cat;b.onclick=()=>{activeCategory=cat;render()};categoriesDiv.appendChild(b)})}
+function renderStock(){const q=searchInput.value.toLowerCase();stockList.innerHTML="";stock.filter(i=>i.name.toLowerCase().includes(q)&&(activeCategory==="All"||i.category===activeCategory)).forEach(item=>{const key=item.name,isSel=selected[key]?.needed,div=document.createElement("div");div.className="item"+(isSel?" selected":"");div.innerHTML=`<div class="item-top"><input class="tick" type="checkbox" ${isSel?"checked":""}><div><div class="item-name">${item.name}</div><div class="item-meta">${item.category} • ${item.unit}</div></div><div class="item-actions"><button class="edit-item" title="Edit item">✎</button><button class="delete-item" title="Remove item">×</button></div></div>${isSel?`<div class="qty-row"><input class="small-input qty" placeholder="Qty" value="${selected[key]?.qty||""}"><input class="small-input note" placeholder="Notes / size / brand" value="${selected[key]?.note||""}"></div>`:""}`;div.querySelector(".tick").onchange=e=>{selected[key]=selected[key]||{};selected[key].needed=e.target.checked;if(!e.target.checked)delete selected[key];save();render()};div.querySelector(".edit-item").onclick=()=>editItem(key);div.querySelector(".delete-item").onclick=()=>removeItem(key);const qty=div.querySelector(".qty"),note=div.querySelector(".note");if(qty)qty.oninput=e=>{selected[key].qty=e.target.value;save();updateOrder()};if(note)note.oninput=e=>{selected[key].note=e.target.value;save();updateOrder()};stockList.appendChild(div)})}
+function updateOrder(){const needed=stock.filter(i=>selected[i.name]?.needed);document.getElementById("totalCount").textContent=stock.length;document.getElementById("neededCount").textContent=needed.length;if(!needed.length){output.value="";document.getElementById("printOutput").textContent="";emptyText.style.display="block";return}emptyText.style.display="none";const groups={};needed.forEach(i=>{groups[i.category]=groups[i.category]||[];groups[i.category].push(i)});let text=`BOOKER ORDER LIST\nThe Boat House\n${new Date().toLocaleDateString("en-GB")}\n\n`;Object.keys(groups).sort().forEach(cat=>{text+=`${cat}\n`;groups[cat].forEach(item=>{const s=selected[item.name];text+=`- ${item.name}: ${s.qty||"___"} ${item.unit}${s.note?" — "+s.note:""}\n`});text+="\n"});output.value=text.trim();document.getElementById("printOutput").textContent=text.trim()}
+function render(){renderCategories();renderStock();updateOrder()}
+function addItem(){const name=document.getElementById("newName").value.trim(),category=document.getElementById("newCat").value.trim()||"Other",unit=document.getElementById("newUnit").value.trim()||"qty";if(!name)return alert("Add an item name first.");stock.push({name,category,unit});document.getElementById("newName").value="";document.getElementById("newCat").value="";document.getElementById("newUnit").value="";save();render()}
+function clearOrder(){if(!confirm("Clear the current order?"))return;selected={};save();render()}
+function copyOrder(){if(!output.value)return alert("No order to copy yet.");navigator.clipboard.writeText(output.value);alert("Order copied.")}
+function removeItem(name){if(!confirm("Remove " + name + " from the stock list?"))return;stock=stock.filter(i=>i.name!==name);delete selected[name];save();render()}
+function editItem(name){
+  const item = stock.find(i=>i.name===name);
+  if(!item) return;
+  const newName = prompt("Edit item name:", item.name);
+  if(newName === null) return;
+  const cleanName = newName.trim();
+  if(!cleanName) return alert("Item name cannot be blank.");
+  const newCategory = prompt("Edit category:", item.category);
+  if(newCategory === null) return;
+  const newUnit = prompt("Edit unit:", item.unit);
+  if(newUnit === null) return;
+
+  const oldName = item.name;
+  item.name = cleanName;
+  item.category = newCategory.trim() || "Other";
+  item.unit = newUnit.trim() || "qty";
+
+  if(selected[oldName]){
+    selected[item.name] = selected[oldName];
+    if(oldName !== item.name) delete selected[oldName];
+  }
+
+  save();
+  render();
+}
+function printOrder(){updateOrder();if(!output.value)return alert("No order to print yet.");window.print()}
+function exportFullStock(){
+  const exportText = stock.map(item => `${item.category} | ${item.name} | ${item.unit}`).join("\\n");
+  const fullText = `KITCHEN STOCK MASTER EXPORT\\nThe Boat House\\n${new Date().toLocaleDateString("en-GB")}\\n\\n${exportText}`;
+  const box = document.getElementById("exportBox");
+  box.style.display = "block";
+  box.value = fullText;
+  box.focus();
+  box.select();
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch(e) {
+    copied = false;
+  }
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(fullText).then(() => {
+      alert("Full stock list copied. If paste does not work, copy it from the yellow box.");
+    }).catch(() => {
+      alert("Export shown in the yellow box. Press and hold inside it, then copy.");
+    });
+  } else {
+    alert(copied ? "Full stock list copied. If paste does not work, copy it from the yellow box." : "Export shown in the yellow box. Press and hold inside it, then copy.");
+  }
+}
+searchInput.addEventListener("input",renderStock);render();
+</script>
+</body>
+</html>
